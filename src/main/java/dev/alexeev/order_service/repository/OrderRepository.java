@@ -8,8 +8,6 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import java.util.Optional;
 
 public interface OrderRepository extends JpaRepository<Order, Long>, JpaSpecificationExecutor<Order> {
-
-  // подгружаем orderItems + item одним запросом при получении одного заказа
   @EntityGraph(attributePaths = {"orderItems", "orderItems.item"})
   Optional<Order> findWithItemsById(Long id);
 }

@@ -26,6 +26,5 @@ public class OrderResponse {
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
 
-  // может быть null, если user-service недоступен (circuit breaker fallback)
   private UserInfoResponse userInfo;
 }
