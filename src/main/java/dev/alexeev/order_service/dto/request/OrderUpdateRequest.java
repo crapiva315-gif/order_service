@@ -17,8 +17,7 @@ import java.util.List;
 @Builder
 public class OrderUpdateRequest {
 
-  // статус можно менять отдельно от позиций - оба поля опциональны,
-  // сервис сам решает, что обновлять, если значение null
+
   private OrderStatus status;
 
   @Valid

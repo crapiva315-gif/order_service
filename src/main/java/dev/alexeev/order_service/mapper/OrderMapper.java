@@ -8,8 +8,6 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", uses = OrderItemMapper.class)
 public interface OrderMapper {
 
-  // userInfo заполняется вручную в сервисе после вызова user-service,
-  // поэтому здесь его игнорируем
   @Mapping(target = "userInfo", ignore = true)
   @Mapping(target = "items", source = "orderItems")
   OrderResponse toResponse(Order order);
