@@ -49,7 +49,6 @@ public class OrderServiceImpl implements OrderService {
 
     Order saved = orderRepository.save(order);
     return orderMapper.toResponse(saved);
-    // userInfo подтягивается в контроллере/фасаде через user-service, см. следующий шаг с circuit breaker
   }
 
   @Override
@@ -94,15 +93,11 @@ public class OrderServiceImpl implements OrderService {
     }
 
     if (request.getItems() != null) {
-      // полная замена позиций: чистим старые (orphanRemoval подчистит их в БД)
-      // и добавляем новые - проще и надёжнее, чем diff-логика для MVP
       order.getOrderItems().clear();
       attachItems(order, request.getItems());
       order.setTotalPrice(calculateTotalPrice(order));
     }
 
-    // save не обязателен для managed-сущности внутри @Transactional,
-    // но явный вызов делает intent читаемым и не зависит от особенностей flush-стратегии
     Order updated = orderRepository.save(order);
     return orderMapper.toResponse(updated);
   }
