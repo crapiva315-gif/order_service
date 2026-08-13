@@ -5,6 +5,7 @@ import dev.alexeev.order_service.dto.request.OrderFilterRequest;
 import dev.alexeev.order_service.dto.request.OrderItemRequest;
 import dev.alexeev.order_service.dto.request.OrderUpdateRequest;
 import dev.alexeev.order_service.dto.response.OrderResponse;
+import dev.alexeev.order_service.dto.response.UserInfoResponse;
 import dev.alexeev.order_service.entity.Item;
 import dev.alexeev.order_service.entity.Order;
 import dev.alexeev.order_service.entity.OrderItem;
@@ -16,6 +17,7 @@ import dev.alexeev.order_service.repository.ItemRepository;
 import dev.alexeev.order_service.repository.OrderRepository;
 import dev.alexeev.order_service.repository.specification.OrderSpecification;
 import dev.alexeev.order_service.service.OrderService;
+import dev.alexeev.order_service.service.UserServiceClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +36,7 @@ public class OrderServiceImpl implements OrderService {
   private final OrderRepository orderRepository;
   private final ItemRepository itemRepository;
   private final OrderMapper orderMapper;
+  private final UserServiceClient userServiceClient;
 
   @Override
   @Transactional
@@ -48,7 +51,9 @@ public class OrderServiceImpl implements OrderService {
     order.setTotalPrice(calculateTotalPrice(order));
 
     Order saved = orderRepository.save(order);
-    return orderMapper.toResponse(saved);
+    OrderResponse response = orderMapper.toResponse(saved);
+    response.setUserInfo(userServiceClient.getUserInfo(saved.getUserId()).orElse(null));
+    return response;
   }
 
   @Override
@@ -57,7 +62,10 @@ public class OrderServiceImpl implements OrderService {
     Order order = orderRepository.findWithItemsById(id)
             .filter(o -> !o.getDeleted())
             .orElseThrow(() -> new OrderNotFoundException(id));
-    return orderMapper.toResponse(order);
+
+    OrderResponse response = orderMapper.toResponse(order);
+    response.setUserInfo(userServiceClient.getUserInfo(order.getUserId()).orElse(null));
+    return response;
   }
 
   @Override
@@ -69,16 +77,20 @@ public class OrderServiceImpl implements OrderService {
             filter.getCreatedTo(),
             filter.getStatuses()
     );
-    return orderRepository.findAll(spec, pageable)
+    Page<OrderResponse> responses = orderRepository.findAll(spec, pageable)
             .map(orderMapper::toResponse);
+    enrichWithUserInfo(responses.getContent());
+    return responses;
   }
 
   @Override
   @Transactional(readOnly = true)
   public Page<OrderResponse> getOrdersByUserId(Long userId, Pageable pageable) {
     var spec = OrderSpecification.withFilters(userId, null, null, null);
-    return orderRepository.findAll(spec, pageable)
+    Page<OrderResponse> responses = orderRepository.findAll(spec, pageable)
             .map(orderMapper::toResponse);
+    enrichWithUserInfo(responses.getContent());
+    return responses;
   }
 
   @Override
@@ -99,7 +111,9 @@ public class OrderServiceImpl implements OrderService {
     }
 
     Order updated = orderRepository.save(order);
-    return orderMapper.toResponse(updated);
+    OrderResponse response = orderMapper.toResponse(updated);
+    response.setUserInfo(userServiceClient.getUserInfo(updated.getUserId()).orElse(null));
+    return response;
   }
 
   @Override
@@ -111,6 +125,22 @@ public class OrderServiceImpl implements OrderService {
 
     order.setDeleted(true);
     orderRepository.save(order);
+  }
+
+  private void enrichWithUserInfo(List<OrderResponse> orders) {
+    if (orders.isEmpty()) {
+      return;
+    }
+    List<Long> userIds = orders.stream()
+            .map(OrderResponse::getUserId)
+            .distinct()
+            .toList();
+
+    Map<Long, UserInfoResponse> usersById = userServiceClient.getUsersInfo(userIds);
+
+    for (OrderResponse order : orders) {
+      order.setUserInfo(usersById.get(order.getUserId()));
+    }
   }
 
   private void attachItems(Order order, List<OrderItemRequest> itemRequests) {
