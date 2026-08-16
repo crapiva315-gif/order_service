@@ -39,7 +39,6 @@ public class Order extends Auditable {
   @Builder.Default
   private List<OrderItem> orderItems = new ArrayList<>();
 
-  // удобный метод для поддержания консистентности двусторонней связи
   public void addOrderItem(OrderItem orderItem) {
     orderItems.add(orderItem);
     orderItem.setOrder(this);
