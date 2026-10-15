@@ -18,6 +18,11 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.xml
     enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}   # in Docker: kafka:19092
+    consumer:
+      group-id: order-service
+      auto-offset-reset: earliest
 
 user-service:
   url: ${USER_SERVICE_URL:http://localhost:8080}
@@ -36,3 +41,7 @@ resilience4j:
     instances:
       userService:
         timeout-duration: 3s
+app:
+  kafka:
+    topics:
+      payment-events: payment-events

@@ -35,6 +35,15 @@ services:
       DB_PASSWORD: ${DB_PASSWORD}
       USER_SERVICE_URL: ${USER_SERVICE_URL:-http://host.docker.internal:8080}
       SHOW_SQL: ${SHOW_SQL:-false}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+    networks:
+      - default
+      - shared
 
 volumes:
   order_service_pg_data:
+
+networks:
+  shared:
+    name: microservices-net
+    external: true
